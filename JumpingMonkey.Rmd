@@ -1,0 +1,239 @@
+---
+title: "RL-Simulation Jumping Monkey"
+author: "Vladimir Zhbanko"
+date: '2018-09-16'
+output:
+  html_document:
+    df_print: paged
+---
+
+# Reinforcement Learning Simulation
+
+Implementing and understanding Generic Example from: [vignette](https://cran.r-project.org/web/packages/ReinforcementLearning/vignettes/ReinforcementLearning.html)
+ReinforcementLearning is released under the MIT License
+Copyright (c) 2017 Nicolas Pröllochs & Stefan Feuerriegel
+
+## Goal
+
+This Simulation will attempt to prototype self-regulating system capable to learn which state is more favourable for the System. 
+
+*Goal* of this Demo is to demonstrate how RL defines an policy by receiving a feedback from the system
+
+## Implementation in R
+
+Code below will help to install package **ReinforcementLearning** if not done yet
+
+```{r message=FALSE, warning=FALSE}
+# package installation
+#install.packages("ReinforcementLearning")
+library(ReinforcementLearning)
+library(tidyverse)
+
+```
+
+
+## Description of the environment
+
+In our situation we will have 6 chairs in which system can be:
+
+` |———–--------------------|`
+` | s1   s2  s3  s4  s5  s6|`
+` |———–--------------------|`
+
+* 'Monkey' will randomly jump to each chair
+* 'Monkey' will recieve sween snack upon jumping on some of the chairs
+* 'Monkey' will recieve bitter snack upon jumping on other chairs
+* 'Monkey' will not receive anything if there is no jump
+
+'Monkey' should accumulate knowledge about the `Environment` and learn the best appropriate behaviour!
+
+Actions we will have will continue to be:
+
+` |———–-----|`
+` | JUMP SIT|`
+` |———–-----|`
+
+
+We will define our States and Actions using the code below to the sets of vectors:
+
+```{r}
+# Define state and action sets
+states <- c("s1", "s2", "s3", "s4", "s5", "s6")
+actions <- c("JUMP", "SIT")
+```
+
+
+## Data for Simulation
+
+Simulation will be possible by using the auxiliary function `generic_environment`.
+
+3 states will be 'favorable' and 3 un-favorable as will be defined:
+
+```{r}
+source("generic_environment.R")
+print(generic_environment)
+```
+
+This function will tend to generate data with positive rewards in the states 1, 3, 5 and negative rewards otherwise...
+
+```{r}
+set.seed(99)
+data <- sampleExperience(N = 200, env = generic_environment, states = states, actions = actions)
+head(data, 20)
+```
+
+Explore this data:
+```{r}
+# demonstrates sums of generated rewards by State and Action
+data %>% group_by(State, Action) %>% summarize(sum = sum(Reward)) %>% ggplot(aes(sum, State, col = Action))+geom_point()
+```
+
+
+
+## Reinforcement learning parameters
+
+As we already know there are 3 parameters defining how the system will learn. We will define them using this list
+
+```{r}
+# Define reinforcement learning parameters
+control <- list(alpha = 0.1, gamma = 0.8, epsilon = 0.1)
+```
+
+## Reinforcement learning
+
+Performing RL using a code below.
+
+### Initial Learning 
+
+```{r}
+rm(model)
+
+# Perform reinforcement learning
+model <- ReinforcementLearning(data, s = "State", a = "Action", r = "Reward", 
+                               s_new = "NextState", iter = 1, verbose = T, control = control)
+```
+ 
+```{r}
+plot(model)
+```
+
+```{r}
+print(model)
+```
+
+## Update the model
+
+### New data
+
+```{r}
+set.seed(99)
+# sample new data
+data_new <- sampleExperience(N = 200, env = generic_environment, states = states, actions = actions,
+                             model = model, actionSelection = "epsilon-greedy", 
+                             control = control)
+```
+
+```{r}
+# demonstrates sums of generated rewards by State and Action
+data_new %>% group_by(State, Action) %>% summarize(sum = sum(Reward)) %>% ggplot(aes(sum, State, col = Action))+geom_point()
+```
+
+### New Model
+
+```{r}
+model <- ReinforcementLearning(data_new, s = "State", a = "Action", r = "Reward", 
+                               s_new = "NextState", iter = 1, verbose = T, control = control,
+                               model = model)
+```
+
+### results
+
+```{r}
+plot(model)
+```
+
+```{r}
+print(model)
+```
+
+## Changing the environment!
+
+```{r}
+source("generic_environment1.R")
+print(generic_environment)
+```
+
+### Sample new data
+
+```{r}
+set.seed(99)
+# sample new data
+data_new_env <- sampleExperience(N = 200, env = generic_environment, states = states, actions = actions,
+                             model = model, actionSelection = "epsilon-greedy", 
+                             control = control)
+```
+
+```{r}
+# demonstrates sums of generated rewards by State and Action
+data_new_env %>% group_by(State, Action) %>% summarize(sum = sum(Reward)) %>% ggplot(aes(sum, State, col = Action))+geom_point()
+```
+
+### Update the model
+
+```{r}
+model <- ReinforcementLearning(data_new_env, s = "State", a = "Action", r = "Reward", 
+                               s_new = "NextState", iter = 1, verbose = T, control = control,
+                               model = model)
+```
+
+```{r}
+plot(model)
+```
+
+```{r}
+print(model)
+```
+
+```{r}
+set.seed(99)
+# sample new data
+data_new_env2 <- sampleExperience(N = 200, env = generic_environment, states = states, actions = actions,
+                             model = model, actionSelection = "epsilon-greedy", 
+                             control = control)
+```
+
+```{r}
+model <- ReinforcementLearning(data_new_env2, s = "State", a = "Action", r = "Reward", 
+                               s_new = "NextState", iter = 2, verbose = T, control = control,
+                               model = model)
+```
+
+```{r}
+plot(model)
+```
+
+
+```{r}
+print(model)
+```
+
+
+
+## Conclusion
+
+- Only simulation
+- Parameterization is needed
+- Good when negative reward is not critical
+- Good when sample data and automatic reward generation from the system is possible
+
+
+## Parameters
+
+**"alpha"** The learning rate, set between 0 and 1. Setting it to 0 means that the Q-values are never updated and, hence, nothing is learned. Setting a high value, such as 0.9, means that learning can occur quickly.
+
+**"gamma"** Discount factor, set between 0 and 1. Determines the importance of future rewards. A factor of 0 will render the agent short-sighted by only considering current rewards, while a factor approaching 1 will cause it to strive for a greater reward over the long term.
+
+**"epsilon"** Exploration parameter, set between 0 and 1. Defines the exploration mechanism in ϵϵ-greedy action selection. In this strategy, the agent explores the environment by selecting an action at random with probability ϵϵ. Alternatively, the agent exploits its current knowledge by choosing the optimal action with probability 1−ϵ1−ϵ. This parameter is only required for sampling new experience based on an existing policy.
+
+**"iter"** Number of repeated learning iterations. Iter is an integer greater than 0. The default is set to 1.
+
