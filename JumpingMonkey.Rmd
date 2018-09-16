@@ -13,6 +13,10 @@ Implementing and understanding Generic Example from: [vignette](https://cran.r-p
 ReinforcementLearning is released under the MIT License
 Copyright (c) 2017 Nicolas Pröllochs & Stefan Feuerriegel
 
+# Reference
+
+Created for Udemy Course [Lazy Trading Part 6: Detect Market status with AI](https://www.udemy.com/detect-market-status-with-ai/?couponCode=LAZYTRADE6-10)
+
 ## Goal
 
 This Simulation will attempt to prototype self-regulating system capable to learn which state is more favourable for the System. 
@@ -204,7 +208,7 @@ data_new_env2 <- sampleExperience(N = 200, env = generic_environment, states = s
 
 ```{r}
 model <- ReinforcementLearning(data_new_env2, s = "State", a = "Action", r = "Reward", 
-                               s_new = "NextState", iter = 2, verbose = T, control = control,
+                               s_new = "NextState", iter = 1, verbose = T, control = control,
                                model = model)
 ```
 
@@ -221,7 +225,7 @@ print(model)
 
 ## Conclusion
 
-- Only simulation
+- Only simulation but excellent to demonstrate self-adapting system behavior
 - Parameterization is needed
 - Good when negative reward is not critical
 - Good when sample data and automatic reward generation from the system is possible
